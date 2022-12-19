@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+    <title>Freude Herrscht Cup</title>
+    <script src="/jquery-3.6.1.min.js"></script>
+    <link rel="stylesheet" href="/nachwuchscup/css/pico.min.css">
+    <link rel="stylesheet" href="/nachwuchscup/css/styles.css">
+
+</head>
+
+<body>
+    <div class="header">
+        <nav>
+            <ul>
+                <li><strong>BOLV Cup manager</strong></li>
+            </ul>
+            <ul>
+                <li><a href="/nachwuchscup/admin">Home</a></li>
+            </ul>
+        </nav>
+    </div>
+    <div class="container">
+        <div class="horizontal-grid">
+            <div>
+                <h2>Kategorien</h2>
+                <?php
+                require('../../database.php');
+                ini_set('display_errors', 1);
+                $cupId = $_GET['id'];
+                $category = 'D10';
+                if (isset($_GET['category'])) {
+                    $category = $_GET['category'];
+
+                }
+
+                $categories = $pdo->query("SELECT name, cup_id FROM cups_categories
+                    WHERE cup_id = $cupId
+                    ORDER BY name ASC");
+                while ($row = $categories->fetch()) {
+                    echo "<a href='?category={$row['name']}&id=$cupId'>{$row['name']}</a> <br>";
+                }
+                ?>
+            </div>
+            <div>
+                <h2>Resultate</h2>
+                <?php
+
+                $resultsSql = $pdo->query("
+                SELECT
+                    results.runnerId as runnerId,
+                    results.raceId as raceId,
+                    results.points as points,
+                    races.cupId as cupId,
+                    races.name as raceName
+                FROM
+                    results
+                LEFT JOIN
+                    races
+                ON
+                    races.solv_id = results.raceId
+                WHERE cupId = {$cupId}   
+                ");
+                $results = $resultsSql->fetchAll();
+
+                
+                // Turn results into a matrix with raceId and runnerId as key and points as value
+                $points = array_reduce($results, function ($carry, $item) {
+                    $carry[$item['raceId']][$item['runnerId']] = $item['points'];
+                    return $carry;
+                }, []);
+
+                $racesSql = $pdo->query("
+                SELECT
+                    cupId,
+                    solv_id,
+                    name,
+                    date
+                FROM
+                    races
+                WHERE cupId = {$cupId}
+                ORDER BY date ASC
+                ");
+                $races = $racesSql->fetchAll();
+                function getPointsFor($runner, $solv_id): int
+                {
+                    global $points;
+                    return $points[$runner][$solv_id] ?? 0;
+                }
+                
+
+                $pdo->query("SET sql_mode = ''");
+                $total_points = $pdo->query("SELECT
+                    runners.name as runner,
+                    runners.id as runnerId,
+                    runners.year as birthyear, 
+                    runners.club as club,
+                    runners.canton as canton,
+                    runners.category as category,
+                    SUM(results.points) as points,
+                    races.name as race,
+                    races.solv_id as solv_id,
+                    races.cupId as cupId
+                  FROM results
+                  RIGHT JOIN races ON results.raceId = races.solv_id
+                  LEFT JOIN runners ON runners.id = results.runnerId
+                  WHERE races.cupId = '$cupId' AND category = '$category'
+                  GROUP BY runner
+                  ORDER BY points DESC");
+                echo "<table>
+                  <tr>
+                      <th>Name</th>
+                      <th>Club</th>
+                      <th>Geburtsjahr</th>
+                      <th>Kanton</th>
+                      ";
+                        foreach ($races as $race) {
+                            echo "<th>{$race['name']}</th>";
+                        }
+                        echo "
+                      <th>Total</th>
+                      </tr>";
+
+                while ($row = $total_points->fetch()) {
+                    echo "
+                        <tr> 
+                        <td>{$row['runner']}
+                         <td>CLUB</td>
+                         <td>Jahrgang</td>
+                         <td>Kanton</td>
+                            ";
+                            foreach ($races as $race) {
+                        $racePoints = getPointsFor($race['solv_id'], $row['runnerId']);
+                                echo "<td>{$racePoints}</td>";
+                            }
+                            echo "
+                         <td>{$row['points']}</td>
+                         </tr>
+                         ";
+
+                }
+                ?>
+                </table>
+            </div>
+        </div>
+        <div>
+            <h2>Läufe</h2>
+        <?php
+            ini_set('display_errors', 1);
+
+
+            $season = $pdo->query("SELECT season FROM cups WHERE id = $cupId")->fetchColumn();
+
+            $races = $pdo->query(
+                "SELECT races.solv_id as solvid, races.name as name, races.club as club, races.date as date, races.solv_id as solv_id, races.cupId as cupId
+        FROM races
+        WHERE cupId = $cupId"
+            );
+            $races->execute();
+
+            echo '<table>
+        <tr>
+            <th>Lauf</th>
+            <th>Klub</th>
+            <th>Datum</th>
+            <th>SOLV ID</th>
+            <th>Laden</th>
+            <th>Löschen</th>
+        </tr>';
+
+            while ($row = $races->fetch()) {
+                echo
+                    "<tr>
+                <td>{$row['name']}</td>
+                <td>{$row['club']}</td>
+                <td>{$row['date']}</td>
+                <td>{$row['solv_id']}</td>
+                <td>
+                <form method='post' action='load_results.php'>
+                    <input type='submit' name='Load Results' />
+                    <input type='hidden' name='solv_id' value='{$row['solv_id']}' />
+                    <input type='hidden' name='cup_id' value='{$cupId}' />
+                 </form>
+                </td>
+                <td>
+                <form method='post' action='delete_race.php'>
+                    <input type='submit' name='Delete' />
+                    <input type='hidden' name='solv_id' value='{$row['solv_id']}' />
+                    <input type='hidden' name='cup_id' value='{$cupId}' />
+                 </form>
+                </td>
+                </tr>
+                ";
+            }
+            ?>
+            </table>
+            </div>
+
+        <article class="not-so-tall">
+            <h2>Rennen hinzufügen</h2>
+            <form method="post" action="add_race.php">
+                Name<input type="text" name="name"><br>
+                Klub<input type="text" name="club"><br>
+                Datum<input type="date" name="date"><br>
+                Solv ID<input type="text" name="solv_id"><br>
+                <?php
+                echo '<input style="display: none;" name="cup_id" value="' . $cupId . '">';
+                echo '<input style="display: none;" name="season" value="' . $season . '">';
+                ?>
+                <button type="submit" value="Add" id="submit">send</button>
+            </form>
+        </article>
+        <div>
+            <h2>Danger zone</h2>
+            <div>
+                <form method="post" action="delete_cup.php">
+                    <?php
+                    echo '<input style="display: none;" name="cup_id" value="' . $cupId . '">';
+                    ?>
+                    <button type="submit" value="Delete" id="submit">Delete Cup</button>
+                </form>
+            </div>
+        </div>
+
+    </div>
+</body>
+
+</html>
