@@ -3,15 +3,17 @@
 require('../../database.php');
 ini_set('display_errors', 1);
 
-$race = $_POST['solv_id'];
+$raceId = $_POST['raceId'];
+$solvId = $_POST['solv_id'];
 $cupId = $_POST['cup_id'];
+$calculation = $_POST['calculation'];
 
 $categories = $pdo->query("SELECT name FROM `cups_categories` WHERE `cup_id` = $cupId");
 $categories = $categories->fetchAll(PDO::FETCH_COLUMN, 0);
 
 // *** FETCH RESULTS FROM SOLV ***
 $curl = curl_init();
-$url = "https://o-l.ch/cgi-bin/results?type=rang&rl_id={$race}&kind=all&csv=1";
+$url = "https://o-l.ch/cgi-bin/results?type=rang&rl_id={$solvId}&kind=all&csv=1";
 curl_setopt($curl, CURLOPT_URL, $url);
 curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
 
@@ -61,35 +63,56 @@ foreach($arr as $row){
     $runnerId = $pdo->query("SELECT id FROM `runners` WHERE `name` = '{$name}' AND `year` = '{$birthyear}' AND `category` = '{$catecory}' AND `cupId` = '{$cupId}'") -> fetchColumn();
     // calculate points
     $rank = $row[4];
-    $points = calculatePoints($rank);
+    $points = calculatePoints($rank, $calculation);
 
     // Insert points if entry doesn't exist
     $pdo->query("INSERT INTO `results` (`runnerId`, `raceId`, `points`) 
-    SELECT '{$runnerId}', '{$race}', '{$points}'
+    SELECT '{$runnerId}', '{$raceId}', '{$points}'
     FROM DUAL
     WHERE NOT EXISTS (
       SELECT 1 FROM `results` 
-      WHERE `runnerId` = '{$runnerId}' AND `raceId` = '{$race}'
+      WHERE `runnerId` = '{$runnerId}' AND `raceId` = '{$raceId}'
     )
     ");
 
+    // Get races and points for runner with runnerId
+    $allResults = $pdo->query("SELECT runnerId, raceId, points, striked from results where runnerId = $runnerId")->fetchAll();
+    // Strike races with
+    if (sizeof($allResults) >= 6) {
+        // a matrix of allResults with raceId as key
+        $sth = array_reduce($allResults, function ($carry, $item) {
+            $carry[$item['raceId']] = $item['points'];
+            return $carry;
+        }, []);
+        echo print_r($sth);
+
+    }
+    
+
+   // echo print_r($allResults);
     
     $rank = $row[4];
     echo $name . " " . $rank . "<br>";
 }
 
 // Method to calculate points
-function calculatePoints($rank) {
+function calculatePoints($rank, $calculation) {
     if($rank == "") {
         return 0;
     }
-    $points = 31 - $rank;
+
+    $maxPoints = 30;
+    if ($calculation == 'NACHWUCHSCUP_SCHLUSSLAUF') {
+        $maxPoints = 40;
+    }
+
+    $points = $maxPoints + 1 - $rank;
     if($points < 0) {
         $points = 0;
     }
     return $points;
 }
 
-header("Location: index.php?id=$cupId");
+//header("Location: index.php?id=$cupId");
 
 ?>

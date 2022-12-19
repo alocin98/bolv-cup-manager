@@ -9,11 +9,12 @@ $name = $_POST["name"];
 $club = $_POST["club"];
 $date = $_POST["date"];
 $season = $_POST["season"];
+$calculation = $_POST["calculation"];
 
 
 try {
     $pdo->beginTransaction();
-    $sql = $pdo->query("INSERT INTO `races` (`solv_id`, `name`, `club`, `date`, cupId) VALUES ('$solv_id', '$name', '$club', '$date', $cupId)");
+    $sql = $pdo->query("INSERT INTO `races` (`solv_id`, `name`, `club`, `date`, cupId, `calculation`) VALUES ('$solv_id', '$name', '$club', '$date', $cupId, '$calculation')");
 
     $pdo->commit();
 } catch (Exception $e) {

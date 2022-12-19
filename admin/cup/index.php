@@ -60,7 +60,7 @@
                 LEFT JOIN
                     races
                 ON
-                    races.solv_id = results.raceId
+                    races.id = results.raceId
                 WHERE cupId = {$cupId}   
                 ");
                 $results = $resultsSql->fetchAll();
@@ -75,7 +75,7 @@
                 $racesSql = $pdo->query("
                 SELECT
                     cupId,
-                    solv_id,
+                    id,
                     name,
                     date
                 FROM
@@ -84,10 +84,10 @@
                 ORDER BY date ASC
                 ");
                 $races = $racesSql->fetchAll();
-                function getPointsFor($runner, $solv_id): int
+                function getPointsFor($runner, $id): int
                 {
                     global $points;
-                    return $points[$runner][$solv_id] ?? 0;
+                    return $points[$runner][$id] ?? 0;
                 }
                 
 
@@ -101,10 +101,10 @@
                     runners.category as category,
                     SUM(results.points) as points,
                     races.name as race,
-                    races.solv_id as solv_id,
+                    races.id as raceId,
                     races.cupId as cupId
                   FROM results
-                  RIGHT JOIN races ON results.raceId = races.solv_id
+                  RIGHT JOIN races ON results.raceId = races.id
                   LEFT JOIN runners ON runners.id = results.runnerId
                   WHERE races.cupId = '$cupId' AND category = '$category'
                   GROUP BY runner
@@ -132,7 +132,7 @@
                          <td>Kanton</td>
                             ";
                             foreach ($races as $race) {
-                        $racePoints = getPointsFor($race['solv_id'], $row['runnerId']);
+                        $racePoints = getPointsFor($race['id'], $row['runnerId']);
                                 echo "<td>{$racePoints}</td>";
                             }
                             echo "
@@ -154,7 +154,7 @@
             $season = $pdo->query("SELECT season FROM cups WHERE id = $cupId")->fetchColumn();
 
             $races = $pdo->query(
-                "SELECT races.solv_id as solvid, races.name as name, races.club as club, races.date as date, races.solv_id as solv_id, races.cupId as cupId
+                "SELECT races.solv_id as solv_id, races.id as raceId, races.name as name, races.club as club, races.date as date, races.cupId as cupId, races.calculation as calculation
         FROM races
         WHERE cupId = $cupId"
             );
@@ -176,18 +176,20 @@
                 <td>{$row['name']}</td>
                 <td>{$row['club']}</td>
                 <td>{$row['date']}</td>
-                <td>{$row['solv_id']}</td>
+                <td>{$row['raceId']}</td>
                 <td>
                 <form method='post' action='load_results.php'>
                     <input type='submit' name='Load Results' />
-                    <input type='hidden' name='solv_id' value='{$row['solv_id']}' />
+                    <input type='hidden' name='raceId' value='{$row['raceId']}' />
                     <input type='hidden' name='cup_id' value='{$cupId}' />
+                    <input type='hidden' name='solv_id' value='{$row['solv_id']}' />
+                    <input type='hidden' name='calculation' value='{$row['calculation']}' />
                  </form>
                 </td>
                 <td>
                 <form method='post' action='delete_race.php'>
                     <input type='submit' name='Delete' />
-                    <input type='hidden' name='solv_id' value='{$row['solv_id']}' />
+                    <input type='hidden' name='race_id' value='{$row['raceId']}' />
                     <input type='hidden' name='cup_id' value='{$cupId}' />
                  </form>
                 </td>
@@ -206,9 +208,11 @@
                 Datum<input type="date" name="date"><br>
                 Solv ID<input type="text" name="solv_id"><br>
                 <?php
+                echo 'Berechnung<input type="text" name="calculation">';
                 echo '<input style="display: none;" name="cup_id" value="' . $cupId . '">';
                 echo '<input style="display: none;" name="season" value="' . $season . '">';
                 ?>
+                <p>(Berechnung: NACHWUCHSCUP_SCHLUSSLAUF oder NACHWUCHSCUP_STANDARD)</p>
                 <button type="submit" value="Add" id="submit">send</button>
             </form>
         </article>
