@@ -2,6 +2,12 @@
 // Github Repo: https://github.com/rasifix/orienteering.api/blob/master/services/solv-loader.js
 require('../../database.php');
 ini_set('display_errors', 1);
+if (!function_exists('str_contains')) {
+    function str_contains(string $haystack, string $needle): bool
+    {
+        return '' === $needle || false !== strpos($haystack, $needle);
+    }
+}
 
 $raceId = $_POST['raceId'];
 $solvId = $_POST['solv_id'];
@@ -26,17 +32,34 @@ $arr = str_getcsv($csv, "\n"); //parse the rows
 
 
 
-$existing_runners = $pdo->query("SELECT CONCAT(name, '-', category, '-', year) AS RUNNER_CODE FROM `runners` WHERE `cupId` = $cupId");
+$existing_runners = $pdo->query("SELECT CONCAT(name, '-', category, '-', year) AS RUNNER_CODE FROM `runners` WHERE cupId = {$cupId}");
 $existing_runners = $existing_runners->fetchAll(PDO::FETCH_COLUMN, 0);
 
 
+$region = ["ol norska", "OLG Oberwil", "OLG Herzogenbuchsee", "OLG Hondrich", "ol.biel.seeland", "OLG Thun", "OL Regio Burgdorf", "OLG Bern", "Bucheggberger OL", "OLG Biberist SO", "OLV Langenthal", "OLC Omström Sense"];
 
+
+$regional_rank = 1;
+$current_category = "";
 //Loop over the array
 foreach($arr as $row){
     $row = str_getcsv($row, ";"); //parse the items in rows
     $catecory = $row[0];
     // Skip if category is not in cup
     if(!in_array($catecory, $categories)) {
+        continue;
+    }
+
+    // Reset regional rank if category changed
+    if ($current_category != $catecory) {
+        $regional_rank = 1;
+        $current_category = $catecory;
+    }
+
+    $club = $row[8];
+    // Skip if runner not in this region
+    if(mb_stripos(implode($region), $club) === false) {
+        echo $club . " not in region";
         continue;
     }
 
@@ -53,8 +76,9 @@ foreach($arr as $row){
         // Get necessary Infos
         $club = $row[8];
 
-        // Add to Runner's database
-        $pdo->query("INSERT INTO `runners` (`name`, `year`, `category`, `club`, `cupId`) VALUES ('{$name}', '{$birthyear}', '{$catecory}', '{$club}', '{$cupId}')");
+        // Add to runer's database if not already exists
+        $pdo->query("INSERT INTO `runners` (`name`, `year`, `category`, `club`, `cupId`) select '{$name}', '{$birthyear}', '{$catecory}', '{$club}', '{$cupId}' from dual where not exists (select 1 from runners where name = '{$name}' and year = '{$birthyear}' and category = '{$catecory}' and cupId = '{$cupId}')");
+        
 
     }
 
@@ -63,36 +87,26 @@ foreach($arr as $row){
     $runnerId = $pdo->query("SELECT id FROM `runners` WHERE `name` = '{$name}' AND `year` = '{$birthyear}' AND `category` = '{$catecory}' AND `cupId` = '{$cupId}'") -> fetchColumn();
     // calculate points
     $rank = $row[4];
-    $points = calculatePoints($rank, $calculation);
+    echo $regional_rank;
+    echo "<br>";
+    $points = calculatePoints($regional_rank, $calculation);
 
-    // Insert points if entry doesn't exist
-    $pdo->query("INSERT INTO `results` (`runnerId`, `raceId`, `points`) 
-    SELECT '{$runnerId}', '{$raceId}', '{$points}'
-    FROM DUAL
-    WHERE NOT EXISTS (
-      SELECT 1 FROM `results` 
-      WHERE `runnerId` = '{$runnerId}' AND `raceId` = '{$raceId}'
-    )
+
+    $pdo->query("INSERT INTO `results` (`runnerId`, `raceId`, `cupId`, `points`) 
+    VALUES ('{$runnerId}', '{$raceId}', '{$cupId}', '{$points}')
+    ON DUPLICATE KEY UPDATE `points` = '{$points}'
     ");
 
     // Get races and points for runner with runnerId
-    $allResults = $pdo->query("SELECT runnerId, raceId, points, striked from results where runnerId = $runnerId")->fetchAll();
-    // Strike races with
-    if (sizeof($allResults) >= 6) {
-        // a matrix of allResults with raceId as key
-        $sth = array_reduce($allResults, function ($carry, $item) {
-            $carry[$item['raceId']] = $item['points'];
-            return $carry;
-        }, []);
-        echo print_r($sth);
-
+    $bestSix = $pdo->query("SELECT runnerId, raceId, cupId, points, striked from results where runnerId = $runnerId and cupId = $cupId order by points desc limit 0, 6")->fetchAll();
+    if (sizeof($bestSix) == 6) {
+        $pdo->query("UPDATE `results` SET `striked` = 1 WHERE `runnerId` = '{$runnerId}' and `cupId` = '{$cupId}'");
+        foreach ($bestSix as $row) {
+            $pdo->query("UPDATE `results` SET `striked` = 0 WHERE `runnerId` = '{$row[0]}' AND `raceId` = '{$row[1]}' and `cupId` = '{$cupId}'");
+        }
     }
-    
-
-   // echo print_r($allResults);
-    
-    $rank = $row[4];
-    echo $name . " " . $rank . "<br>";
+    // Increase rank
+    $regional_rank++;
 }
 
 // Method to calculate points

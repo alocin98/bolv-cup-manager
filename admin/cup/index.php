@@ -61,7 +61,7 @@
                     races
                 ON
                     races.id = results.raceId
-                WHERE cupId = {$cupId}   
+                WHERE races.cupId = {$cupId}   
                 ");
                 $results = $resultsSql->fetchAll();
 
@@ -99,7 +99,7 @@
                     runners.club as club,
                     runners.canton as canton,
                     runners.category as category,
-                    SUM(results.points) as points,
+                    SUM(case when results.striked = 0 then results.points end) as points,
                     races.name as race,
                     races.id as raceId,
                     races.cupId as cupId
