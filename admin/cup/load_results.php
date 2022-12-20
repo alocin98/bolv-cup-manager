@@ -36,7 +36,7 @@ $existing_runners = $pdo->query("SELECT CONCAT(name, '-', category, '-', year) A
 $existing_runners = $existing_runners->fetchAll(PDO::FETCH_COLUMN, 0);
 
 
-$region = ["ol norska", "OLG Oberwil", "OLG Herzogenbuchsee", "OLG Hondrich", "ol.biel.seeland", "OLG Thun", "OL Regio Burgdorf", "OLG Bern", "Bucheggberger OL", "OLG Biberist SO", "OLV Langenthal", "OLC Omström Sense"];
+$region = ["ol norska", "OLG Oberwil", "OLG Herzogenbuchsee", "OLG Hondrich", "ol.biel.seeland", "OLG Thun", "OL Regio Burgdorf", "OLG Bern", "Bucheggberger OL", "OLG Biberist SO", "OLV Langenthal", "OLC Omström Sense", "OLG Huttwil"];
 
 
 $regional_rank = 1;
@@ -58,9 +58,16 @@ foreach($arr as $row){
 
     $club = $row[8];
     // Skip if runner not in this region
-    if(mb_stripos(implode($region), $club) === false) {
-        echo $club . " not in region";
-        continue;
+    if(isClubIn($club, $region) === false) {
+        if(mb_stripos($club, "/") !== false) {
+            // Double club name
+            $clubs = explode("/", $club);
+            if(isClubIn($clubs[0], $region) === false && isClubIn($clubs[1], $region) === false) {
+                continue;
+            }
+        } else {
+            continue;
+        }
     }
 
     // Detect two equal runners by name, category and birthyear
@@ -87,9 +94,8 @@ foreach($arr as $row){
     $runnerId = $pdo->query("SELECT id FROM `runners` WHERE `name` = '{$name}' AND `year` = '{$birthyear}' AND `category` = '{$catecory}' AND `cupId` = '{$cupId}'") -> fetchColumn();
     // calculate points
     $rank = $row[4];
-    echo $regional_rank;
-    echo "<br>";
     $points = calculatePoints($regional_rank, $calculation);
+    echo $name . " " . $points . " " . $regional_rank . " " . $club  . "<br>";
 
 
     $pdo->query("INSERT INTO `results` (`runnerId`, `raceId`, `cupId`, `points`) 
@@ -125,6 +131,11 @@ function calculatePoints($rank, $calculation) {
         $points = 0;
     }
     return $points;
+}
+
+function isClubIn($club, $region)
+{
+    return mb_stripos(implode($region), $club);
 }
 
 //header("Location: index.php?id=$cupId");
