@@ -74,6 +74,15 @@ echo
                 }
                 ?>
                 </select>
+    Klubs <select name="clubs[]" multiple>
+                <?php
+                $getClubsSql = $pdo->query("SELECT id, name FROM clubs");
+                $getClubsSql->execute();
+                while($row = $getClubsSql->fetch()) {
+                    echo "<option value='{$row['id']}'>{$row['name']}</option>";
+                }
+                ?>
+                </select>
     <button type="submit" value="Add" id="submit">send</button>
 </form>   
 </article> 

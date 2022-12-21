@@ -36,7 +36,7 @@ $existing_runners = $pdo->query("SELECT CONCAT(name, '-', category, '-', year) A
 $existing_runners = $existing_runners->fetchAll(PDO::FETCH_COLUMN, 0);
 
 
-$region = ["ol norska", "OLG Oberwil", "OLG Herzogenbuchsee", "OLG Hondrich", "ol.biel.seeland", "OLG Thun", "OL Regio Burgdorf", "OLG Bern", "Bucheggberger OL", "OLG Biberist SO", "OLV Langenthal", "OLC Omström Sense", "OLG Huttwil"];
+$clubs = $pdo->query("SELECT name FROM `cups_clubs WHERE cupId = {$cupId} join clubs on cups_clubs.clubId = clubs.id")->fetch(PDO::FETCH_COLUMN, 0);
 
 
 $regional_rank = 1;
@@ -58,11 +58,11 @@ foreach($arr as $row){
 
     $club = $row[8];
     // Skip if runner not in this region
-    if(isClubIn($club, $region) === false) {
+    if(isClubIn($club, $clubs) === false) {
         if(mb_stripos($club, "/") !== false) {
             // Double club name
             $clubs = explode("/", $club);
-            if(isClubIn($clubs[0], $region) === false && isClubIn($clubs[1], $region) === false) {
+            if(isClubIn($clubs[0], $clubs) === false && isClubIn($clubs[1], $clubs) === false) {
                 continue;
             }
         } else {
@@ -133,9 +133,9 @@ function calculatePoints($rank, $calculation) {
     return $points;
 }
 
-function isClubIn($club, $region)
+function isClubIn($club, $clubs)
 {
-    return mb_stripos(implode($region), $club);
+    return mb_stripos(implode($clubs), $club);
 }
 
 //header("Location: index.php?id=$cupId");
