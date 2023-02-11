@@ -19,7 +19,7 @@ $categories = $categories->fetchAll(PDO::FETCH_COLUMN, 0);
 
 // *** FETCH RESULTS FROM SOLV ***
 $curl = curl_init();
-$url = "https://o-l.ch/cgi-bin/results?type=rang&rl_id={$solvId}&kind=all&csv=1";
+$url = "https://o-l.ch/cgi-bin/results?unique_id=$solvId&kind=all&csv=1";
 curl_setopt($curl, CURLOPT_URL, $url);
 curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
 
@@ -36,8 +36,7 @@ $existing_runners = $pdo->query("SELECT CONCAT(name, '-', category, '-', year) A
 $existing_runners = $existing_runners->fetchAll(PDO::FETCH_COLUMN, 0);
 
 
-$clubs = $pdo->query("SELECT name FROM `cups_clubs WHERE cupId = {$cupId} join clubs on cups_clubs.clubId = clubs.id")->fetch(PDO::FETCH_COLUMN, 0);
-
+$cup_clubs = $pdo->query("SELECT name FROM `cups_clubs` join clubs on cups_clubs.clubId = clubs.id WHERE cupId = $cupId")->fetchAll(PDO::FETCH_COLUMN, 0);
 
 $regional_rank = 1;
 $current_category = "";
@@ -56,13 +55,13 @@ foreach($arr as $row){
         $current_category = $catecory;
     }
 
-    $club = $row[8];
+    $runners_club = $row[8];
     // Skip if runner not in this region
-    if(isClubIn($club, $clubs) === false) {
-        if(mb_stripos($club, "/") !== false) {
+    if(isClubIn($runners_club, $cup_clubs) === false) {
+        if(mb_stripos($runners_club, "/") !== false) {
             // Double club name
-            $clubs = explode("/", $club);
-            if(isClubIn($clubs[0], $clubs) === false && isClubIn($clubs[1], $clubs) === false) {
+            $runners_clubs = explode("/", $club);
+            if(isClubIn($runners_clubs[0], $cup_clubs) === false && isClubIn($runners_clubs[1], $cup_clubs) === false) {
                 continue;
             }
         } else {
@@ -138,6 +137,6 @@ function isClubIn($club, $clubs)
     return mb_stripos(implode($clubs), $club);
 }
 
-//header("Location: index.php?id=$cupId");
+header("Location: index.php?id=$cupId");
 
 ?>

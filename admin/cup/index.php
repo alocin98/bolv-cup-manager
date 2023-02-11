@@ -176,7 +176,7 @@
                 <td>{$row['name']}</td>
                 <td>{$row['club']}</td>
                 <td>{$row['date']}</td>
-                <td>{$row['raceId']}</td>
+                <td>{$row['solv_id']}</td>
                 <td>
                 <form method='post' action='load_results.php'>
                     <input type='submit' name='Load Results' />
@@ -202,19 +202,18 @@
 
         <article class="not-so-tall">
             <h2>Rennen hinzufügen</h2>
-            <form method="post" action="add_race.php">
-                Name<input type="text" name="name"><br>
-                Klub<input type="text" name="club"><br>
-                Datum<input type="date" name="date"><br>
-                Solv ID<input type="text" name="solv_id"><br>
-                <?php
-                echo 'Berechnung<input type="text" name="calculation">';
-                echo '<input style="display: none;" name="cup_id" value="' . $cupId . '">';
-                echo '<input style="display: none;" name="season" value="' . $season . '">';
-                ?>
-                <p>(Berechnung: NACHWUCHSCUP_SCHLUSSLAUF oder NACHWUCHSCUP_STANDARD)</p>
-                <button type="submit" value="Add" id="submit">send</button>
-            </form>
+            <?php
+                echo "<form method='get' action='add_race.php'>
+                <input type='hidden' name='cupId' value='${cupId}'>
+                <input type='hidden' name='season' value='${season}'>
+                Berechnung
+                <select name='calculation'>
+                    <option value='NACHWUCHSCUP_STANDARD'>Nachwuchscup Standard</option>
+                    <option value='NACHWUCHSCUP_SCHLUSSLAUF'>Nachwuchscup Schlusslauf</option>
+                </select>
+                <button type='submit' value='Rennen hinzufügen' id='submit'>Rennen hinzufügen</button>
+                </form>"
+            ?>
         </article>
         <div>
             <h2>Danger zone</h2>
