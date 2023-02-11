@@ -1,7 +1,6 @@
 <?php
 // Github Repo: https://github.com/rasifix/orienteering.api/blob/master/services/solv-loader.js
 require('../../database.php');
-ini_set('display_errors', 1);
 if (!function_exists('str_contains')) {
     function str_contains(string $haystack, string $needle): bool
     {
@@ -60,7 +59,7 @@ foreach($arr as $row){
     if(isClubIn($runners_club, $cup_clubs) === false) {
         if(mb_stripos($runners_club, "/") !== false) {
             // Double club name
-            $runners_clubs = explode("/", $club);
+            $runners_clubs = explode("/", $runners_club);
             if(isClubIn($runners_clubs[0], $cup_clubs) === false && isClubIn($runners_clubs[1], $cup_clubs) === false) {
                 continue;
             }
