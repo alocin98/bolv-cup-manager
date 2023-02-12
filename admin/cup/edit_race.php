@@ -73,14 +73,16 @@
                     </thead>
                     <tbody id="_editable_table">
                         <?php foreach ($results as $res): ?>
-                            <tr data-row-id="<?php echo $res['id']; ?>">
+                            <tr data-row-id="<?php echo $res['runnerId']; ?>">
                                 <td class="editable-col" contenteditable="true" col-index="0"
                                     oldval="<?php echo $res['runnerName']; ?>"><?php echo $res['runnerName']; ?></td>
                                 <td class="editable-col" contenteditable="true" col-index="1"
                                     oldval="<?php echo $res['runnerClub']; ?>"><?php echo $res['runnerClub']; ?></td>
                                 <td class="editable-col" contenteditable="true" col-index="2"
-                                    oldval="<?php echo $res['runnerCanton']; ?>"><?php echo $res['runnerCanton']; ?></td>
+                                    oldval="<?php echo $res['runnerYear']; ?>"><?php echo $res['runnerYear']; ?></td>
                                 <td class="editable-col" contenteditable="true" col-index="3"
+                                    oldval="<?php echo $res['runnerCanton']; ?>"><?php echo $res['runnerCanton']; ?></td>
+                                <td class="editable-col" contenteditable="true" col-index="4"
                                     oldval="<?php echo $res['points']; ?>"><?php echo $res['points']; ?></td>
                             </tr>
                         <?php endforeach; ?>
@@ -103,7 +105,7 @@
                             $.ajax({
 
                                 type: "POST",
-                                url: "server.php",
+                                url: "edit_runner.php",
                                 cache: false,
                                 data: data,
                                 dataType: "json",
@@ -123,121 +125,6 @@
 
                 </script>
 
-
-
-
-
-
-
-
-
-
-
-
-
-            </div>
-            <div>
-                <h2>Kategorien</h2>
-                <?php
-                require('../../database.php');
-                ini_set('display_errors', 1);
-                $cupId = $_GET["cup_id"];
-                $raceId = $_GET["race_id"];
-
-                $category = 'D10';
-                if (isset($_GET['category'])) {
-                    $category = $_GET['category'];
-                }
-
-                $categories = $pdo->query("SELECT name, cup_id FROM cups_categories
-                    WHERE cup_id = $cupId
-                    ORDER BY name ASC");
-                while ($row = $categories->fetch()) {
-                    echo "<a href='?category={$row['name']}&cup_id=$cupId&race_id=$raceId'>{$row['name']}</a> <br>";
-                }
-                ?>
-            </div>
-            <div>
-                <h2>Resultate</h2>
-                <table>
-                    <tr>
-                        <th>Name</th>
-                        <th>Club</th>
-                        <th>Geburtsjahr</th>
-                        <th>Kanton</th>
-                        <th>Punkte</th>
-                        <th>Ändern</th>
-                    </tr>
-                    <?php
-
-                    $resultsSql = $pdo->query("
-                SELECT
-                    results.runnerId as runnerId,
-                    results.raceId as raceId,
-                    results.points as points,
-                    races.cupId as cupId,
-                    races.name as raceName,
-                    runners.name as runnerName,
-                    runners.category as runnerCategory
-                FROM results
-
-                LEFT JOIN races ON races.id = results.raceId
-                LEFT JOIN runners ON runners.id = results.runnerId
-
-                WHERE races.cupId = {$cupId}   
-                AND races.id = {$raceId}
-                AND runners.category = '{$category}'
-                ");
-
-                    while ($row = $resultsSql->fetch()) {
-
-                        echo "
-                        <tr> 
-                        <td>{$row['runnerName']}
-                         <td>CLUB</td>
-                         <td>Jahrgang</td>
-                         <td>Kanton</td>
-                         <td>{$row['points']}</td>
-                         </tr>
-                         ";
-
-                    }
-                    ?>
-                    <tr>
-                        <?php
-                        echo "
-                    <form method='post' action='add_runner.php'>
-                    <td><input type='text' name='runner_name'></td>
-                    <td><input type='text' name='runner_club'></td>
-                    <td><input type='text' name='runner_year'></td>
-                    <td><input type='text' name='runner_canton'></td>
-                    <td><input type='text' name='runner_points'></td>
-                    <input style='display: none;' name='cup_id' value='$cupId'>
-                    <input style='display: none;' name='race_id' value='$raceId'>
-                    <input style='display: none;' name='runner_category' value='$category'>
-                    <td><input type='submit' value='Add'></td>
-                    </form>
-                    "
-                            ?>
-
-                    </tr>
-                </table>
-            </div>
-        </div>
-
-        <div>
-            <h2>Danger zone</h2>
-            <div>
-                <form method="post" action="delete_cup.php">
-                    <?php
-                    echo '<input style="display: none;" name="cup_id" value="' . $cupId . '">';
-                    ?>
-                    <button type="submit" value="Delete" id="submit">Delete Cup</button>
-                </form>
-            </div>
-        </div>
-
-    </div>
 </body>
 
 </html>
