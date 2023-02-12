@@ -117,7 +117,7 @@
                       <th>Kanton</th>
                       ";
                         foreach ($races as $race) {
-                            echo "<th>{$race['name']}</th>";
+                            echo "<th class='vertical'>{$race['name']}</th>";
                         }
                         echo "
                       <th>Total</th>
@@ -147,6 +147,7 @@
         </div>
         <div>
             <h2>Läufe</h2>
+            <div>
         <?php
             ini_set('display_errors', 1);
 
@@ -168,18 +169,19 @@
             <th>SOLV ID</th>
             <th>Laden</th>
             <th>Löschen</th>
+            <th>Bearbeiten</th>
         </tr>';
 
             while ($row = $races->fetch()) {
                 echo
-                    "<tr>
+                    "<tr class='races_table'>
                 <td>{$row['name']}</td>
                 <td>{$row['club']}</td>
                 <td>{$row['date']}</td>
                 <td>{$row['solv_id']}</td>
                 <td>
                 <form method='post' action='load_results.php'>
-                    <input type='submit' name='Load Results' />
+                    <input type='submit' name='Load Results' value='Laden' />
                     <input type='hidden' name='raceId' value='{$row['raceId']}' />
                     <input type='hidden' name='cup_id' value='{$cupId}' />
                     <input type='hidden' name='solv_id' value='{$row['solv_id']}' />
@@ -188,7 +190,14 @@
                 </td>
                 <td>
                 <form method='post' action='delete_race.php'>
-                    <input type='submit' name='Delete' />
+                    <input type='submit' title='delete' name='Delete' value='Löschen' />
+                    <input type='hidden' name='race_id' value='{$row['raceId']}' />
+                    <input type='hidden' name='cup_id' value='{$cupId}' />
+                 </form>
+                 </td>
+                <td>
+                 <form method='get' action='edit_race.php'>
+                    <input type='submit' name='Delete' value='Edit' />
                     <input type='hidden' name='race_id' value='{$row['raceId']}' />
                     <input type='hidden' name='cup_id' value='{$cupId}' />
                  </form>
@@ -198,6 +207,7 @@
             }
             ?>
             </table>
+
             </div>
 
         <article class="not-so-tall">

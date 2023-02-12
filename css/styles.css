@@ -14,3 +14,23 @@
     display: grid !important;
     grid-template-columns: 20% 80%;
 }
+
+.vertical {
+    writing-mode: vertical-rl !important;
+    text-orientation: mixed;
+}
+
+.races_table > td {
+   max-height: 10px;
+   height: 10px;
+}
+
+input[type=submit] {
+    padding: 0;
+    margin: 0;
+    height: 30px;
+}
+
+td {
+    padding: 0;
+}
