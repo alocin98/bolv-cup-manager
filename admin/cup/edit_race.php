@@ -99,6 +99,8 @@
                             data['val'] = $(this).text();
                             data['id'] = $(this).parent('tr').attr('data-row-id');
                             data['index'] = $(this).attr('col-index');
+                            data['raceId'] = <?php echo $raceId; ?>;
+                            data['cupId'] = <?php echo $cupId; ?>;
                             if ($(this).attr('oldVal') === data['val'])
                                 return false;
 

@@ -1,7 +1,6 @@
 <?php
-  //include connection file 
-  include_once("connection.php");
-  
+  require('../../database.php');
+
   //define index of column
   $columns = array(
     0 =>'runnerName', 
@@ -10,40 +9,20 @@
     3 => 'runnerCanton',
     4 => 'runnerPoints',
   );
-  $error = true;
-  $colVal = '';
-  $colIndex = $rowId = 0;
-  
-  $msg = array('status' => !$error, 'msg' => 'Failed! updation in mysql');
-  if(isset($_POST)){
-    if(isset($_POST['val']) && !empty($_POST['val']) && $error) {
-      $colVal = $_POST['val'];
-      $error = false;
-      
-    } else {
-      $error = true;
-    }
-    if(isset($_POST['index']) && $_POST['index'] >= 0 &&  $error) {
-      $colIndex = $_POST['index'];
-      $error = false;
-    } else {
-      $error = true;
-    }
-    if(isset($_POST['id']) && $_POST['id'] > 0 && $error) {
-      $rowId = $_POST['id'];
-      $error = false;
-    } else {
-      $error = true;
-    }
-  
-    if(!$error) {
-        //update data in mysql database
-        $sql = "UPDATE results SET ".$columns[$colIndex]." = '".$colVal."' WHERE runnerId='".$rowId."'";
-        $status = mysqli_query($conn, $sql) or die("database error:". mysqli_error($conn));
-        $msg = array('status' => !$error, 'msg' => 'Success! updation in mysql');
-    }
+
+  $value = $_POST['val'];
+  $runnerId = $_POST['id'];
+  $colIndex = $_POST['index'];
+
+  $raceId = $_POST['raceId'];
+  $cupId = $_POST['cupId'];
+
+  $msg = "OK";
+
+  if($colIndex == 4) {
+    $sql = $pdo->query("UPDATE `results` SET `points` = $value WHERE `runnerId` = $runnerId AND `raceId` = $raceId AND cupId = $cupId");
   }
-  
+
   // send data as json format
   echo json_encode($msg);
 ?>

@@ -3,7 +3,6 @@ require('../../database.php');
 ini_set('display_errors', 1);
 
 $cupId = $_POST["cup_id"];
-
 $raceId = $_POST["race_id"];
 
 
